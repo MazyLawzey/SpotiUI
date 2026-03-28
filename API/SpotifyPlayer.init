@@ -1,0 +1,4 @@
+private init() {
+    SpotifyAuth.logout() // ← добавь на один запуск
+    isAuthenticated = SpotifyAuth.isAuthenticated
+}

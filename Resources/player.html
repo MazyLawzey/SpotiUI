@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+<script src="https://sdk.scdn.co/spotify-player.js"></script>
+<script>
+window.onSpotifyWebPlaybackSDKReady = () => {
+    const player = new Spotify.Player({
+        name: 'SpotiUI',
+        getOAuthToken: cb => {
+            window.webkit.messageHandlers.getToken.postMessage({});
+            window._tokenCallback = cb;
+        },
+        volume: 0.8
+    });
+
+    // Готовность плеера
+    player.addListener('ready', ({ device_id }) => {
+        window._deviceId = device_id;
+        window.webkit.messageHandlers.onReady.postMessage({ device_id });
+    });
+
+    // Смена состояния
+    player.addListener('player_state_changed', state => {
+        if (!state) return;
+        window.webkit.messageHandlers.onStateChanged.postMessage({
+            paused: state.paused,
+            position: state.position,
+            duration: state.duration,
+            track_name: state.track_window.current_track.name,
+            artist_name: state.track_window.current_track.artists.map(a => a.name).join(', '),
+            album_image: state.track_window.current_track.album.images[0]?.url ?? '',
+            track_uri: state.track_window.current_track.uri,
+            shuffle: state.shuffle,
+            repeat_mode: state.repeat_mode
+        });
+    });
+
+    player.addListener('not_ready', ({ device_id }) => {
+        window.webkit.messageHandlers.onNotReady.postMessage({ device_id });
+    });
+
+    player.addListener('initialization_error', ({ message }) => {
+        window.webkit.messageHandlers.onError.postMessage({ message });
+    });
+
+    player.addListener('authentication_error', ({ message }) => {
+        window.webkit.messageHandlers.onError.postMessage({ message });
+    });
+
+    player.addListener('account_error', ({ message }) => {
+        window.webkit.messageHandlers.onError.postMessage({ message });
+    });
+
+    player.connect();
+    window._player = player;
+};
+
+// Команды из Swift
+function receiveToken(token) {
+    if (window._tokenCallback) {
+        window._tokenCallback(token);
+        window._tokenCallback = null;
+    }
+}
+
+function playUri(uri) {
+    window._player.pause().then(() => {
+        fetch(`https://api.spotify.com/v1/me/player/play?device_id=${window._deviceId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${window._accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ uris: [uri] })
+        });
+    });
+}
+
+function togglePlay() { window._player.togglePlay(); }
+function nextTrack()  { window._player.nextTrack(); }
+function prevTrack()  { window._player.previousTrack(); }
+function seekTo(ms)   { window._player.seek(ms); }
+function setVolume(v) { window._player.setVolume(v); }
+
+function storeToken(token) {
+    window._accessToken = token;
+}
+</script>
+</body>
+</html>
