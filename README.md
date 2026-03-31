@@ -1,5 +1,5 @@
 # SpotiUI
-Spotify on SwiftUI.
+Spotify on SwiftUI. Required Spotify Premium!
 
 # Player
 <img width="462" height="764" alt="image" src="https://github.com/user-attachments/assets/0abf8606-7173-48b3-833c-cc3ac53c1367" />
